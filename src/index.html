@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shape Generator</title>
+    <style>
+        body {
+            background: linear-gradient(to right,  #83a4d4, #b6fbff);
+        }
+    </style>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <form id="shapeForm">
+    <label for="count">Count:</label>
+    <input type="number" id="count" name="count" value="0">
+    <br>
+    <label for="innerShape">Inner Shape:</label>
+    <select id="innerShape" name="innerShape">
+        <option value="Sphere">Sphere</option>
+        <option value="Parallelepiped">Parallelepiped</option>
+        <option value="Cylinder">Cylinder</option>
+    </select>
+    <br>
+    <label for="maxInnerShapeLength">Max Inner Shape Length:</label>
+    <input type="number" id="maxInnerShapeLength" name="maxInnerShapeLength" value="0">
+    <br>
+    <label for="maxInnerShapeWidth">Max Inner Shape Width:</label>
+    <input type="number" id="maxInnerShapeWidth" name="maxInnerShapeWidth" value="0">
+    <br>
+    <label for="maxInnerShapeHeight">Max Inner Shape Height:</label>
+    <input type="number" id="maxInnerShapeHeight" name="maxInnerShapeHeight" value="0">
+    <br>
+    <label for="minInnerShapeLength">Min Inner Shape Length:</label>
+    <input type="number" id="minInnerShapeLength" name="minInnerShapeLength" value="0">
+    <br>
+    <label for="minInnerShapeWidth">Min Inner Shape Width:</label>
+    <input type="number" id="minInnerShapeWidth" name="minInnerShapeWidth" value="0">
+    <br>
+    <label for="minInnerShapeHeight">Min Inner Shape Height:</label>
+    <input type="number" id="minInnerShapeHeight" name="minInnerShapeHeight" value="0">
+    <br>
+    <label for="isSortingEnable">Is Sorting Enabled:</label>
+    <input type="checkbox" id="isSortingEnable" name="isSortingEnable" checked>
+    <br>
+    <label for="boundingShape">Bounding Shape:</label>
+    <select id="boundingShape" name="boundingShape">
+        <option value="Sphere">Sphere</option>
+        <option value="Parallelepiped">Parallelepiped</option>
+        <option value="Cylinder">Cylinder</option>
+    </select>
+    <br>
+    <label for="boundingShapeLength">Bounding Shape Length:</label>
+    <input type="number" id="boundingShapeLength" name="boundingShapeLength" value="0">
+    <br>
+    <label for="boundingShapeWidth">Bounding Shape Width:</label>
+    <input type="number" id="boundingShapeWidth" name="boundingShapeWidth" value="0">
+    <br>
+    <label for="boundingShapeHeight">Bounding Shape Height:</label>
+    <input type="number" id="boundingShapeHeight" name="boundingShapeHeight" value="0">
+    <br>
+    <label for="distributionOfPosition">Distribution of Position:</label>
+    <select id="distributionOfPosition" name="distributionOfPosition">
+        <option value="Uniform">Uniform</option>
+        <option value="Gaussian">Gaussian</option>
+        <option value="Gamma">Gamma</option>
+    </select>
+    <br>
+    <label for="distributionOfLength">Distribution of Length:</label>
+    <select id="distributionOfLength" name="distributionOfLength">
+        <option value="Uniform">Uniform</option>
+        <option value="Gaussian">Gaussian</option>
+        <option value="Gamma">Gamma</option>
+    </select>
+    <br>
+    <button type="button" id="generateButton">Generate</button>
+  </form>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script type="module">
+    import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+    
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.25;
+    controls.screenSpacePanning = false;
+    controls.maxPolarAngle = Math.PI / 2;
+
+    function generateShapes() {
+        const formData = {
+            count: document.getElementById('count').value,
+            innerShape: document.getElementById('innerShape').value,
+            maxInnerShapeDimension: {
+                length: document.getElementById('maxInnerShapeLength').value,
+                width: document.getElementById('maxInnerShapeWidth').value,
+                height: document.getElementById('maxInnerShapeHeight').value
+            },
+            minInnerShapeDimension: {
+                length: document.getElementById('minInnerShapeLength').value,
+                width: document.getElementById('minInnerShapeWidth').value,
+                height: document.getElementById('minInnerShapeHeight').value
+            },
+            isSortingEnable: document.getElementById('isSortingEnable').checked,
+            boundingShape: document.getElementById('boundingShape').value,
+            boundingShapeDimension: {
+                length: document.getElementById('boundingShapeLength').value,
+                width: document.getElementById('boundingShapeWidth').value,
+                height: document.getElementById('boundingShapeHeight').value
+            },
+            distributionOfPosition: document.getElementById('distributionOfPosition').value,
+            distributionOfLength: document.getElementById('distributionOfLength').value
+            // Добавьте другие поля по мере необходимости
+        };
+        // Assuming you have an API endpoint for shape generation
+        const apiEndpoint = 'https://localhost:7271/api/Case';
+
+        // Use fetch to send data to the API
+        fetch(apiEndpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        })
+            .then(response => response.json())
+            .then(data => addShapes(data, formData.boundingShape, formData.boundingShapeDimension, formData.innerShape))
+            .catch(error => {
+                console.error('Error:', error);
+                // Handle error, show a message, etc.
+            });
+    }
+
+    var generateButton = document.getElementById("generateButton");
+
+    generateButton.addEventListener("click", generateShapes);
+
+    camera.position.z = 5;
+
+    // Create an animation
+    function animate() {
+        requestAnimationFrame(animate);
+
+        // Update controls
+        controls.update();
+
+        // Render the scene
+        renderer.render(scene, camera);
+    }
+    function clearScene(scene) {
+        // Удалите все объекты из сцены
+        scene.children.forEach(object => {
+            if (object instanceof THREE.Mesh) {
+                // Если объект - это меш, удаляем его геометрию и материал
+                object.geometry.dispose();
+                object.material.dispose();
+            }
+            scene.remove(object);
+        });
+
+        // Очистите массивы объектов сцены
+        scene.children = [];
+
+        // Опционально, вы можете очистить текстуры и другие ресурсы
+        THREE.DefaultLoadingManager.onLoad = function () {}; // Очистить загрузчик по умолчанию
+        THREE.Cache.clear(); // Очистить кеш текстур
+    }
+
+    function addShapes(data, boundingShape, boundingShapeDimension, innerShape) {
+        
+        var boundingShapeLength = parseFloat(boundingShapeDimension.length);
+        var boundingShapeWidth = parseFloat(boundingShapeDimension.width);
+        var boundingShapeHeight = parseFloat(boundingShapeDimension.height);
+
+        clearScene(scene);
+        if(boundingShape == "Sphere")
+        {
+            var sphereGeometry = new THREE.SphereGeometry(boundingShapeLength, 16, 16);
+            var sphereMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
+            var sphere = new THREE.LineSegments(new THREE.EdgesGeometry(sphereGeometry), sphereMaterial);
+            scene.add(sphere);
+        }
+        if(boundingShape == "Parallelepiped")
+        {
+            // Create a cube
+            var cubeGeometry = new THREE.BoxGeometry(boundingShapeLength, boundingShapeWidth, boundingShapeHeight);
+            var cubeMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
+            var cube = new THREE.LineSegments(new THREE.EdgesGeometry(cubeGeometry), cubeMaterial);
+            scene.add(cube);  
+        }
+        if(boundingShape == "Cylinder")
+        {
+            if(boundingShapeLength != boundingShapeWidth)
+            {
+                console.error("Lenght and Width must be equal");
+            }
+
+            var cylinderGeometry = new THREE.CylinderGeometry(boundingShapeLength, boundingShapeLength, boundingShapeHeight, 16);
+            var cylinderMaterial = new THREE.LineBasicMaterial({ color: 0xff0000 });
+            var cylinder = new THREE.LineSegments(new THREE.EdgesGeometry(cylinderGeometry), cylinderMaterial);
+            scene.add(cylinder);
+        }
+        var cnt = 0;
+        data.shapes.forEach(element => {
+            var randomColor = new THREE.Color(Math.random(), Math.random(), Math.random());
+            var material = new THREE.LineBasicMaterial({ color: randomColor });
+            var shape = null;
+            cnt++;
+
+            if(innerShape == "Sphere")
+            {
+                var sphereGeometry = new THREE.SphereGeometry(element.length, 16, 16);
+                shape = new THREE.LineSegments(new THREE.EdgesGeometry(sphereGeometry), material);
+            }
+            if(innerShape == "Parallelepiped")
+            {
+                var cubeGeometry = new THREE.BoxGeometry(element.length, element.width, element.height);
+                shape = new THREE.LineSegments(new THREE.EdgesGeometry(cubeGeometry), material);  
+            }
+            if(innerShape == "Cylinder")
+            {
+                if(boundingShapeLength != boundingShapeWidth)
+                {
+                    console.error("Lenght and Width must be equal");
+                }
+
+                var cylinderGeometry = new THREE.CylinderGeometry(element.length, element.width, element.height, 16);
+                shape = new THREE.LineSegments(new THREE.EdgesGeometry(cylinderGeometry), material);
+            }
+            
+
+
+            shape.position.x = element.x;
+            shape.position.y = element.y;
+            shape.position.z = element.z;
+            shape.rotation.x = element.fi;
+            shape.rotation.y = element.theta;
+            if(shape.position.x == 0 && shape.position.y == 0 && shape.position.z == 0)
+            {
+                console.log(element);
+                console.log(cnt);
+            }
+            scene.add(shape);
+        });
+
+        animate();
+    }
+
+    animate();
+  </script>
+</body>
+</html>
